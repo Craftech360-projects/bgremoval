@@ -25,8 +25,8 @@ RUN pip install -r requirements.txt
 # Copy the source code into the container
 COPY . /app
 
-# Expose port 8000
-EXPOSE 8000
+# Expose port 8765
+EXPOSE 8765
 
 # Command to run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8765"]

@@ -1,4 +1,3 @@
-# app.py
 import io
 from typing import Optional, Tuple
 
