@@ -1,5 +1,5 @@
-rembg==2.0.72
-onnxruntime-directml==1.23.0
+rembg[gpu]==2.0.72
+onnxruntime-gpu==1.22.1
 opencv-python-headless==4.10.0.84
 numpy==1.24.3
 fastapi==0.115.0
