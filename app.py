@@ -22,7 +22,7 @@ _session = None
 def get_session():
     global _session
     if _session is None:
-        _session = new_session("birefnet-massive")
+        _session = new_session("bria-rmbg")
     return _session
 
 
