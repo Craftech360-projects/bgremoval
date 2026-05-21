@@ -24,11 +24,13 @@ def get_session(model_name: str):
     """
     Cache rembg sessions by model name.
     Available models include:
-      - "u2net_human_seg"   (default, best for people/hands)
+      - "birefnet-general-lite" (default, best speed/quality balance)
+      - "u2net"             (fast older general model)
+      - "u2net_human_seg"   (people only, can miss clothing)
       - "silueta"           (small quality/speed balance)
       - "u2netp"            (fastest/smallest, less accurate on hands)
       - "isnet-general-use" (very good, heavier)
-      - "u2net"
+      - "bria-rmbg"         (best quality, much heavier)
     """
     sess = _SESSION_CACHE.get(model_name)
     if sess is None:
@@ -469,7 +471,7 @@ def remove_bg(
     # Use multiple models for ensemble (higher accuracy but slower)
     use_ensemble: Optional[bool] = Form(False, description="Use multiple models for maximum accuracy"),
     # rembg model to use
-    model: Optional[str] = Form("u2net_human_seg", description="u2net_human_seg | silueta | u2netp | isnet-general-use | u2net"),
+    model: Optional[str] = Form("birefnet-general-lite", description="birefnet-general-lite | bria-rmbg | u2net | silueta | u2netp | u2net_human_seg | isnet-general-use"),
     # Force output format? "png" (with alpha) or "jpg" (no alpha). Default auto.
     output_format: Optional[str] = Form(None, description="'png' or 'jpg' (auto if omitted)"),
 ):
@@ -498,8 +500,7 @@ def remove_bg(
 
         # Fast path defaults to a tiny model and avoids expensive alpha matting.
         enhancement_method = enhance_mode if enhance_mode in ["basic", "advanced", "precision"] else "basic"
-        use_fast_model = model in {"u2netp", "silueta"}
-        use_alpha_matting = not (use_fast_model and enhancement_method == "basic")
+        use_alpha_matting = enhancement_method in {"advanced", "precision"}
 
         # High-accuracy matting processing
         if use_ensemble:
