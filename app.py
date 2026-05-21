@@ -24,8 +24,10 @@ def get_session(model_name: str):
     """
     Cache rembg sessions by model name.
     Available models include:
-      - "isnet-general-use" (default, very good)
-      - "u2net_human_seg"   (humans)
+      - "u2net_human_seg"   (default, best for people/hands)
+      - "silueta"           (small quality/speed balance)
+      - "u2netp"            (fastest/smallest, less accurate on hands)
+      - "isnet-general-use" (very good, heavier)
       - "u2net"
     """
     sess = _SESSION_CACHE.get(model_name)
@@ -463,11 +465,11 @@ def remove_bg(
     # Edge softening radius in px
     feather: Optional[float] = Form(0.0, description="Edge feather radius (px)"),
     # Enhanced transparency mode
-    enhance_mode: Optional[str] = Form("advanced", description="basic | advanced | precision (ultra-high accuracy)"),
+    enhance_mode: Optional[str] = Form("basic", description="basic | advanced | precision (ultra-high accuracy)"),
     # Use multiple models for ensemble (higher accuracy but slower)
     use_ensemble: Optional[bool] = Form(False, description="Use multiple models for maximum accuracy"),
     # rembg model to use
-    model: Optional[str] = Form("isnet-general-use", description="isnet-general-use | u2net_human_seg | u2net"),
+    model: Optional[str] = Form("u2net_human_seg", description="u2net_human_seg | silueta | u2netp | isnet-general-use | u2net"),
     # Force output format? "png" (with alpha) or "jpg" (no alpha). Default auto.
     output_format: Optional[str] = Form(None, description="'png' or 'jpg' (auto if omitted)"),
 ):
@@ -494,6 +496,11 @@ def remove_bg(
                     blur += 1
                 bg_rgb = cv2.GaussianBlur(img_rgb, (blur, blur), 0)
 
+        # Fast path defaults to a tiny model and avoids expensive alpha matting.
+        enhancement_method = enhance_mode if enhance_mode in ["basic", "advanced", "precision"] else "basic"
+        use_fast_model = model in {"u2netp", "silueta"}
+        use_alpha_matting = not (use_fast_model and enhancement_method == "basic")
+
         # High-accuracy matting processing
         if use_ensemble:
             # Multi-model ensemble for maximum accuracy
@@ -505,11 +512,11 @@ def remove_bg(
             # Single model processing with optimized parameters
             session = get_session(model)
             
-            # Ultra-high quality parameters for maximum accuracy
+            # Alpha matting improves difficult edges but is expensive on small CPUs.
             matting_params = {
-                "alpha_matting": True,
-                "alpha_matting_foreground_threshold": 270,
-                "alpha_matting_background_threshold": 5,
+                "alpha_matting": use_alpha_matting,
+                "alpha_matting_foreground_threshold": 240,
+                "alpha_matting_background_threshold": 10,
                 "alpha_matting_erode_structure_size": 2,
                 "post_process_mask": True,
             }
@@ -518,8 +525,6 @@ def remove_bg(
             raw_alpha = rgba[..., 3]
 
         # Ultra-high precision transparency processing
-        enhancement_method = enhance_mode if enhance_mode in ["basic", "advanced", "precision"] else "advanced"
-        
         if enhancement_method == "precision":
             # Maximum accuracy processing
             alpha = precision_alpha_refinement(raw_alpha, img_rgb)
