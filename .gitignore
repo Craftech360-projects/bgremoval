@@ -1,1 +1,4 @@
-.venv
+yolo*.pt
+__pycache__/
+debug/
+output_no_bg.png
